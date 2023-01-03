@@ -7,6 +7,8 @@ import time
 from numba import jit, cuda
 
 start = time.time()
+
+# function to reduce noise in the image
 def gaussian_blur(size, sigma=1):
     size = int(size) // 2
     x, y = np.mgrid[-size:size+1, -size:size+1]
@@ -17,6 +19,7 @@ def gaussian_blur(size, sigma=1):
 
 
 @jit(target_backend='cuda') 
+# function to calculate the gradient 
 def sobel(blur_img):
   sobely=np.array([[1,2,1],
                   [0,0,0],
@@ -55,7 +58,7 @@ def sobel(blur_img):
   theta = np.arctan2(iy, ix)
   return (img_sobel, theta)
 
-
+# function for performing non maximum  supression
 def nom_max_supression(img_sobel,theta):
   m,n = img_sobel.shape
   z = np.zeros((m,n))
@@ -95,6 +98,7 @@ def nom_max_supression(img_sobel,theta):
   return z
 
 @jit(target_backend='cuda')
+# fucntion for Double thresholding the image
 def double_threshold(img):
     highThreshold = 30
     lowThreshold = 15
@@ -117,6 +121,7 @@ def double_threshold(img):
     return (res, weak, strong)
    
 @jit(target_backend='cuda')
+# function for hysteresis tracking
 def hysteresis(img, low):
     M, N = img.shape 
     strong = img.max()
@@ -131,12 +136,10 @@ def hysteresis(img, low):
                       img[i, j] = 0
 
     return img       
-
+# function for converting coloured image to grayscale
 def rgb2gray(rgb):
-
     r, g, b = rgb[:,:,0], rgb[:,:,1], rgb[:,:,2]
     gray = 0.2989 * r + 0.5870 * g + 0.1140 * b
-
     return gray
 
 
@@ -144,14 +147,11 @@ original_image = io.imread('D:/DIP3E_Original_Images_CH02/car.png')
 fig1 = plt.figure(1)
 plt.imshow(original_image)
 
-
-
 original_image =  rgb2gray(original_image)   
 stop = time.time()
 print(stop - start, 's', 'no_noise')    
 fig1 =plt.figure(2)   
 plt.imshow(original_image, cmap ="gray")
-
 
 blur_img =gaussian_blur(5)
 stop = time.time()
