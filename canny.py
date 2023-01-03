@@ -1,3 +1,4 @@
+# importing libraries 
 import cv2
 import numpy as np
 from skimage import io
@@ -14,6 +15,7 @@ def gaussian_blur(size, sigma=1):
     blur_img = cv2.filter2D(original_image, ddepth=-1,kernel=g )
     return blur_img
 
+
 @jit(target_backend='cuda') 
 def sobel(blur_img):
   sobely=np.array([[1,2,1],
@@ -26,13 +28,10 @@ def sobel(blur_img):
   s = blur_img.shape
   img_h = s[0]
   img_w = s[1]
-  
   fil_h = sobelx.shape[0]
   fil_w = sobelx.shape[1]
-  
   h = fil_h //2 #gives an intger
   w = fil_w //2
-  
   ix = np.zeros(blur_img.shape)
   iy = np.zeros(blur_img.shape)
   for i in range(h,img_h-h):
@@ -54,20 +53,16 @@ def sobel(blur_img):
   img_sobel= np.hypot(ix,iy)
   img_sobel = img_sobel / img_sobel.max() * 255
   theta = np.arctan2(iy, ix)
-
   return (img_sobel, theta)
 
 
 def nom_max_supression(img_sobel,theta):
-
   m,n = img_sobel.shape
   z = np.zeros((m,n))
   angle = theta * 180 / np.pi
   angle[angle < 0] += 180
-
   q=255
   r=255
-
   for i in range(m-1):
     for j in range(n-1):
 
@@ -97,7 +92,6 @@ def nom_max_supression(img_sobel,theta):
 
       else:
         z[i,j]=0     
-
   return z
 
 @jit(target_backend='cuda')
@@ -108,7 +102,7 @@ def double_threshold(img):
     M, N = img.shape
     res = np.zeros((M,N))
     
-    weak = 150
+    weak = 50
     strong = 255
     
     for i in range(M):
@@ -148,36 +142,44 @@ def rgb2gray(rgb):
 
 original_image = io.imread('D:/DIP3E_Original_Images_CH02/car.png')
 fig1 = plt.figure(1)
-# plt.imshow(original_image)
+plt.imshow(original_image)
+
+
 
 original_image =  rgb2gray(original_image)   
 stop = time.time()
-print(stop - start, 's', 'no_noise')       
-# plt.imshow(original_image, cmap ="gray")
+print(stop - start, 's', 'no_noise')    
+fig1 =plt.figure(2)   
+plt.imshow(original_image, cmap ="gray")
 
 
 blur_img =gaussian_blur(5)
 stop = time.time()
 print(stop - start, 's', 'blur_img')
-# plt.imshow(blur_img, cmap ="gray")
+fig1 =plt.figure(3)
+plt.imshow(blur_img, cmap ="gray")
 
 sobel , theta = sobel(blur_img)
 stop = time.time()
 print(stop - start, 's', 'sobel,theta')
-# plt.imshow(sobel, cmap ="gray")
+fig1 =plt.figure(4)
+plt.imshow(sobel, cmap ="gray")
 
 nms = nom_max_supression(sobel , theta)
 stop = time.time()
 print(stop - start, 's', 'nms')
-# plt.imshow(nms, cmap ="gray")
+fig1 =plt.figure(5)
+plt.imshow(nms, cmap ="gray")
 
 img , weak , strong =  double_threshold(nms)
 stop = time.time()
 print(stop - start, 's', 'img,weak,strong')
-# plt.imshow(img, cmap ="gray")
+fig1 =plt.figure(6)
+plt.imshow(img, cmap ="gray")
 
 output = hysteresis(img , weak)
 stop = time.time()
 print(stop - start, 's', 'output')
+fig1 =plt.figure(7)
 plt.imshow(output, cmap ="gray")
 plt.show()
